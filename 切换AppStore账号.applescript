@@ -1,63 +1,70 @@
--- Script: ÇĞ»»AppStoreÕËºÅ
--- Version: 2.2.7 (µ÷ÕûµÇÂ¼¶Ô»°¿ò³õÊ¼µÈ´ıÎª1.5s)
+-- Script: åˆ‡æ¢AppStoreè´¦å·
+-- Version: 2.3.0 (ç§»é™¤ç¡¬ç¼–ç å‡­æ®ï¼Œæ”¹ä¸ºè¿è¡Œæ—¶ç”¨æˆ·è¾“å…¥)
 -- Author: Cascade AI & USER
 
--- È«¾ÖÈÕÖ¾¼ÇÂ¼Æ÷
+-- å…¨å±€æ—¥å¿—è®°å½•å™¨
 global scriptLog
 
--- ÓÃ»§ÕË»§ĞÅÏ¢ (È·±£ÃÜÂë×¼È·)
-property account1User : "alexcopd@gmail.com"
-property account1Pass : "6954236Tom"
-property account2User : "cyjcz0214@gmail.com"
-property account2Pass : "Alex6.30Cyj"
+-- ç”¨æˆ·è´¦æˆ·ä¿¡æ¯å°†åœ¨è¿è¡Œæ—¶è¾“å…¥
 
--- ²Ëµ¥Ïî±¾µØ»¯ÎÄ±¾ (Ê¹ÓÃÊôĞÔÈ·±£ËüÃÇÔÚ´¦Àí³ÌĞòÖĞ¿ÉÓÃ)
-property menuStoreTextZh : "ÉÌµê"
-property menuSignOutTextZh : "ÍË³öµÇÂ¼"
-property menuLoginTextZh : "µÇÂ¼"
+-- èœå•é¡¹æœ¬åœ°åŒ–æ–‡æœ¬ (ä½¿ç”¨å±æ€§ç¡®ä¿å®ƒä»¬åœ¨å¤„ç†ç¨‹åºä¸­å¯ç”¨)
+property menuStoreTextZh : "å•†åº—"
+property menuSignOutTextZh : "é€€å‡ºç™»å½•"
+property menuLoginTextZh : "ç™»å½•"
 
 property menuStoreTextEn : "Store"
 property menuSignOutTextEn : "Sign Out"
 property menuLoginTextEn : "Sign In"
 
--- Ö÷Ö´ĞĞ¿é
+-- ä¸»æ‰§è¡Œå—
 on run
-	set scriptLog to {} -- ³õÊ¼»¯ÒÆµ½´Ë´¦
-	my logDetail("========= App Store Account Switcher Script Started (v2.2.7) =========")
-	my logDetail("Predefined Account 1: " & account1User)
-	my logDetail("Predefined Account 2: " & account2User)
+	set scriptLog to {} -- åˆå§‹åŒ–ç§»åˆ°æ­¤å¤„
+	my logDetail("========= App Store Account Switcher Script Started (v2.3.0) =========")
+	my logDetail("Script ready for user to input account details.")
 	
 	set targetUser to ""
 	set targetPass to ""
 	
 	try
 		my logDetail("Displaying account selection dialog to user.")
-		display dialog "ÇëÑ¡ÔñÒª²Ù×÷µÄ App Store ÕËºÅ£º" buttons {"ÕËºÅ1", "ÕËºÅ2", "½öÍË³öµ±Ç°ÕËºÅ"} default button "ÕËºÅ1" with title "App Store ÕËºÅÇĞ»»Æ÷"
+		display dialog "è¯·é€‰æ‹©è¦æ“ä½œçš„ App Store è´¦å·ï¼š" buttons {"è´¦å·1", "è´¦å·2", "ä»…é€€å‡ºå½“å‰è´¦å·"} default button "è´¦å·1" with title "App Store è´¦å·åˆ‡æ¢å™¨"
 		set dialogResult to result
 		set choice to button returned of dialogResult
-		my logDetail("User selected: '" & choice & "'.")
+		my logDetail("User selected option: '" & choice & "'.")
 		
-		if choice is "ÕËºÅ1" then
-			set targetUser to account1User
-			set targetPass to account1Pass
-			my logDetail("Target account set to Account 1: " & targetUser)
-		else if choice is "ÕËºÅ2" then
-			set targetUser to account2User
-			set targetPass to account2Pass
-			my logDetail("Target account set to Account 2: " & targetUser)
-		else if choice is "½öÍË³öµ±Ç°ÕËºÅ" then
-			my logDetail("User chose '½öÍË³öµ±Ç°ÕËºÅ'.")
+		if choice is "è´¦å·1" or choice is "è´¦å·2" then
+			set accountNameForDialog to choice
+			display dialog "è¯·è¾“å…¥ " & accountNameForDialog & " çš„ Apple ID:" default answer "" with title (accountNameForDialog & " - Apple ID")
+			set targetUser to text returned of result
+			if targetUser is "" then
+				my logDetail("User did not enter an Apple ID for " & accountNameForDialog & ". Aborting.")
+				display dialog "æœªè¾“å…¥Apple IDï¼Œè„šæœ¬å·²ä¸­æ­¢ã€‚" buttons {"å¥½çš„"} default button 1 icon stop
+				error number -128 -- User cancellation
+			end if
+			
+			display dialog "è¯·è¾“å…¥ " & accountNameForDialog & " ('" & targetUser & "') çš„å¯†ç :" default answer "" with hidden answer with title (accountNameForDialog & " - å¯†ç ")
+			set targetPass to text returned of result
+			if targetPass is "" then
+				my logDetail("User did not enter a password for " & accountNameForDialog & ". Aborting.")
+				display dialog "æœªè¾“å…¥å¯†ç ï¼Œè„šæœ¬å·²ä¸­æ­¢ã€‚" buttons {"å¥½çš„"} default button 1 icon stop
+				error number -128 -- User cancellation
+			end if
+			my logDetail("Target account for " & accountNameForDialog & " set to: " & targetUser & " (Password not logged)")
+		else if choice is "ä»…é€€å‡ºå½“å‰è´¦å·" then
+			my logDetail("User chose 'ä»…é€€å‡ºå½“å‰è´¦å·'.")
+			set targetUser to "" -- Not needed for sign out only
+			set targetPass to "" -- Not needed for sign out only
 		end if
 		
 		my logDetail("Step 1: Attempting to sign out from App Store...")
 		performSignOut()
 		
-		if choice is "½öÍË³öµ±Ç°ÕËºÅ" then
+		if choice is "ä»…é€€å‡ºå½“å‰è´¦å·" then
 			my logDetail("Sign-out only operation complete. Script will now finalize.")
 			error number -128 -- User cancellation to trigger final log display
 		end if
 		
-		my logDetail("Step 2: Attempting to click the 'Sign In' / 'µÇÂ¼' menu item...")
+		my logDetail("Step 2: Attempting to click the 'Sign In' / 'ç™»å½•' menu item...")
 		set signInClickedSuccessfully to clickSignInMenu()
 		
 		my logDetail("Step 3: Processing login.")
@@ -67,18 +74,19 @@ on run
 			
 			if not autoInputSuccess then
 				my logDetail("Automatic credential input FAILED or was skipped. Falling back to manual input prompt.")
-				display dialog "×Ô¶¯ÊäÈëÕËºÅÃÜÂëÊ§°Ü»ò³ö´í¡£App Store µÇÂ¼´°¿ÚÓ¦ÒÑ³öÏÖ¡£ÇëÊÖ¶¯ÊäÈëÒÔÏÂÕËºÅĞÅÏ¢£º" & return & return & "Apple ID: " & targetUser & return & "ÃÜÂë: " & targetPass with title "ÊÖ¶¯µÇÂ¼ĞÅÏ¢" buttons {"ºÃµÄ"} default button "ºÃµÄ"
-				my logDetail("User acknowledged manual input dialog after auto-input failure.")
+				-- Since credentials are now user-provided, this dialog is more of a reminder of what they entered.
+				display dialog "è‡ªåŠ¨è¾“å…¥è´¦å·å¯†ç å¤±è´¥æˆ–å‡ºé”™ã€‚App Store ç™»å½•çª—å£åº”å·²å‡ºç°ã€‚è¯·ä½¿ç”¨æ‚¨åˆšæ‰è¾“å…¥çš„ä»¥ä¸‹è´¦å·ä¿¡æ¯æ‰‹åŠ¨ç™»å½•ï¼š" & return & return & "Apple ID: " & targetUser & return & "å¯†ç : [å·²éšè—]" with title "æ‰‹åŠ¨ç™»å½•æŒ‡å¼•" buttons {"å¥½çš„"} default button "å¥½çš„"
+				my logDetail("User acknowledged manual input dialog after auto-input failure for user: " & targetUser)
 			else
 				my logDetail("Automatic credential input reported as successful or attempted.")
-				display dialog "ÒÑ³¢ÊÔ×Ô¶¯ÊäÈëÕËºÅÃÜÂë¡£Çë¼ì²é App Store µÇÂ¼×´Ì¬¡£" buttons {"ºÃµÄ"} default button "ºÃµÄ" giving up after 5
+				display dialog "å·²å°è¯•è‡ªåŠ¨è¾“å…¥è´¦å·å¯†ç ã€‚è¯·æ£€æŸ¥ App Store ç™»å½•çŠ¶æ€ã€‚" buttons {"å¥½çš„"} default button "å¥½çš„" giving up after 5
 				my logDetail("Brief dialog shown after auto-input attempt.")
 			end if
 		else
 			my logDetail("Failed to click the sign-in menu item, or it was not found/enabled.")
 			my logDetail("Displaying fallback dialog to guide user for manual sign-in via App Store or System Settings.")
-			display dialog "Î´ÄÜ×Ô¶¯µã»÷ App Store ÖĞµÄ¡°µÇÂ¼¡±»ò¡°Sign In¡±Ñ¡Ïî£¨¿ÉÄÜÒÑµÇÂ¼¡¢²Ëµ¥Ïî²»´æÔÚ»òÎ´ÆôÓÃ£©¡£" & return & return & "Çë¼ì²é App Store ½çÃæ£¬»ò³¢ÊÔÍ¨¹ı ÏµÍ³ÉèÖÃ > Apple ID > Ã½ÌåÓë¹ºÂòÏîÄ¿ ÊÖ¶¯µÇÂ¼¡£" & return & return & "Ä¿±êÕËºÅĞÅÏ¢:" & return & "Apple ID: " & targetUser with title "²Ù×÷ÌáÊ¾£ºÊÖ¶¯µÇÂ¼" buttons {"ºÃµÄ"} default button "ºÃµÄ"
-			my logDetail("User acknowledged fallback dialog for sign-in menu click failure.")
+			display dialog "æœªèƒ½è‡ªåŠ¨ç‚¹å‡» App Store ä¸­çš„â€œç™»å½•â€æˆ–â€œSign Inâ€é€‰é¡¹ï¼ˆå¯èƒ½å·²ç™»å½•ã€èœå•é¡¹ä¸å­˜åœ¨æˆ–æœªå¯ç”¨ï¼‰ã€‚" & return & return & "è¯·æ£€æŸ¥ App Store ç•Œé¢ï¼Œæˆ–å°è¯•é€šè¿‡ ç³»ç»Ÿè®¾ç½® > Apple ID > åª’ä½“ä¸è´­ä¹°é¡¹ç›® æ‰‹åŠ¨ç™»å½•ã€‚" & return & return & "ç›®æ ‡è´¦å·ä¿¡æ¯:" & return & "Apple ID: " & targetUser with title "æ“ä½œæç¤ºï¼šæ‰‹åŠ¨ç™»å½•" buttons {"å¥½çš„"} default button "å¥½çš„"
+			my logDetail("User acknowledged fallback dialog for sign-in menu click failure for user: " & targetUser)
 		end if
 		
 		my logDetail("Main script logic complete.")
@@ -94,7 +102,7 @@ on run
 	finalizeScript()
 end run
 
--- ´¦Àí³ÌĞò: Ö´ĞĞÍË³öµÇÂ¼²Ù×÷ (ÄÚÈİÓëv2.1Ò»ÖÂ£¬´Ë´¦Ê¡ÂÔÒÔ¼õÉÙÖØ¸´)
+-- å¤„ç†ç¨‹åº: æ‰§è¡Œé€€å‡ºç™»å½•æ“ä½œ (å†…å®¹ä¸v2.1ä¸€è‡´ï¼Œæ­¤å¤„çœç•¥ä»¥å‡å°‘é‡å¤)
 on performSignOut()
 	my logDetail("performSignOut handler started.")
 	set signOutAttempted to false
@@ -153,13 +161,13 @@ on performSignOut()
 		
 	on error errMsg number errNum
 		my logDetail("ERROR in performSignOut handler: " & errMsg & " (Number: " & errNum & ")")
-		display dialog "³¢ÊÔ´Ó App Store ÍË³öµÇÂ¼Ê±·¢Éú´íÎó£º" & return & errMsg & return & "Çë¼ì²é¡°¸¨Öú¹¦ÄÜ¡±È¨ÏŞ£¬»òÊÖ¶¯²Ù×÷¡£" with title "ÍË³ö²Ù×÷´íÎó" buttons {"ºÃµÄ"} default button 1
+		display dialog "å°è¯•ä» App Store é€€å‡ºç™»å½•æ—¶å‘ç”Ÿé”™è¯¯ï¼š" & return & errMsg & return & "è¯·æ£€æŸ¥â€œè¾…åŠ©åŠŸèƒ½â€æƒé™ï¼Œæˆ–æ‰‹åŠ¨æ“ä½œã€‚" with title "é€€å‡ºæ“ä½œé”™è¯¯" buttons {"å¥½çš„"} default button 1
 		my logDetail("performSignOut handler terminated due to error.")
 	end try
 	my logDetail("performSignOut handler finished.")
 end performSignOut
 
--- ´¦Àí³ÌĞò: µã»÷µÇÂ¼/Sign In²Ëµ¥Ïî (ÄÚÈİÓëv2.1Ò»ÖÂ£¬´Ë´¦Ê¡ÂÔÒÔ¼õÉÙÖØ¸´)
+-- å¤„ç†ç¨‹åº: ç‚¹å‡»ç™»å½•/Sign Inèœå•é¡¹ (å†…å®¹ä¸v2.1ä¸€è‡´ï¼Œæ­¤å¤„çœç•¥ä»¥å‡å°‘é‡å¤)
 on clickSignInMenu()
 	my logDetail("clickSignInMenu handler started.")
 	set clickedSuccessfully to false
@@ -220,9 +228,9 @@ on clickSignInMenu()
 	return clickedSuccessfully
 end clickSignInMenu
 
--- ĞÂ´¦Àí³ÌĞò: Ö´ĞĞ×Ô¶¯µÇÂ¼ (ÊäÈëÕËºÅÃÜÂë)
+-- æ–°å¤„ç†ç¨‹åº: æ‰§è¡Œè‡ªåŠ¨ç™»å½• (è¾“å…¥è´¦å·å¯†ç )
 on performAutoLogin(appleID, pass)
-	my logDetail("performAutoLogin handler started for user: " & appleID)
+	my logDetail("performAutoLogin handler started for user: " & appleID & " (Password not logged)")
 	local autoLoginAttempted, autoLoginSucceeded
 	set autoLoginAttempted to false
 	set autoLoginSucceeded to false
@@ -281,7 +289,7 @@ on performAutoLogin(appleID, pass)
 end performAutoLogin
 
 
--- ¸¨Öú´¦Àí³ÌĞò: ÏêÏ¸ÈÕÖ¾¼ÇÂ¼ (´øÊ±¼ä´Á) (ÄÚÈİÓëv2.1Ò»ÖÂ£¬´Ë´¦Ê¡ÂÔ)
+-- è¾…åŠ©å¤„ç†ç¨‹åº: è¯¦ç»†æ—¥å¿—è®°å½• (å¸¦æ—¶é—´æˆ³) (å†…å®¹ä¸v2.1ä¸€è‡´ï¼Œæ­¤å¤„çœç•¥)
 on logDetail(messageText)
 	try
 		set timestamp to time string of (current date)
@@ -292,7 +300,7 @@ on logDetail(messageText)
 	end try
 end logDetail
 
--- ¸¨Öú´¦Àí³ÌĞò: ºÏ²¢ÈÕÖ¾ÁĞ±íÎª×Ö·û´® (ÄÚÈİÓëv2.1Ò»ÖÂ£¬´Ë´¦Ê¡ÂÔ)
+-- è¾…åŠ©å¤„ç†ç¨‹åº: åˆå¹¶æ—¥å¿—åˆ—è¡¨ä¸ºå­—ç¬¦ä¸² (å†…å®¹ä¸v2.1ä¸€è‡´ï¼Œæ­¤å¤„çœç•¥)
 on joinLogs(logList)
 	set prevDelimiters to AppleScript's text item delimiters
 	set AppleScript's text item delimiters to return
@@ -301,9 +309,9 @@ on joinLogs(logList)
 	return joinedString
 end joinLogs
 
--- ¸¨Öú´¦Àí³ÌĞò: ½Å±¾½áÊøÊ±µÄ²Ù×÷ (ÏÔÊ¾ÈÕÖ¾) (ÄÚÈİÓëv2.1Ò»ÖÂ£¬´Ë´¦Ê¡ÂÔ)
+-- è¾…åŠ©å¤„ç†ç¨‹åº: è„šæœ¬ç»“æŸæ—¶çš„æ“ä½œ (æ˜¾ç¤ºæ—¥å¿—) (å†…å®¹ä¸v2.1ä¸€è‡´ï¼Œæ­¤å¤„çœç•¥)
 on finalizeScript()
-	my logDetail("========= App Store Account Switcher Script Finished (v2.2.7) =========")
+	my logDetail("========= App Store Account Switcher Script Finished (v2.3.0) =========")
 	
 	log ""
 	log "--- Script Log Start ---"
