@@ -1,11 +1,12 @@
 -- Script: 切换AppStore账号
--- Version: 2.3.0 (移除硬编码凭据，改为运行时用户输入)
+-- Version: 2.4.0 (集成钥匙串读取/保存凭据功能)
 -- Author: Cascade AI & USER
 
 -- 全局日志记录器
 global scriptLog
 
--- 用户账户信息将在运行时输入
+-- 用户账户信息将在运行时输入或从钥匙串读取
+property keychainServicePrefix : "applescript.AppStoreAccountSwitcher." -- 用于钥匙串服务名的前缀
 
 -- 菜单项本地化文本 (使用属性确保它们在处理程序中可用)
 property menuStoreTextZh : "商店"
@@ -19,7 +20,7 @@ property menuLoginTextEn : "Sign In"
 -- 主执行块
 on run
 	set scriptLog to {} -- 初始化移到此处
-	my logDetail("========= App Store Account Switcher Script Started (v2.3.0) =========")
+	my logDetail("========= App Store Account Switcher Script Started (v2.4.0) =========")
 	my logDetail("Script ready for user to input account details.")
 	
 	set targetUser to ""
@@ -33,23 +34,61 @@ on run
 		my logDetail("User selected option: '" & choice & "'.")
 		
 		if choice is "账号1" or choice is "账号2" then
-			set accountNameForDialog to choice
-			display dialog "请输入 " & accountNameForDialog & " 的 Apple ID:" default answer "" with title (accountNameForDialog & " - Apple ID")
-			set targetUser to text returned of result
-			if targetUser is "" then
-				my logDetail("User did not enter an Apple ID for " & accountNameForDialog & ". Aborting.")
-				display dialog "未输入Apple ID，脚本已中止。" buttons {"好的"} default button 1 icon stop
-				error number -128 -- User cancellation
+			set accountSlotName to choice -- "账号1" or "账号2"
+			set resolvedAppleID to missing value
+			set resolvedPassword to missing value
+			
+			-- 构建钥匙串服务名
+			set appleIDService to keychainServicePrefix & accountSlotName & ".AppleID"
+			set passwordService to keychainServicePrefix & accountSlotName & ".Password"
+			
+			-- 尝试从钥匙串读取
+			set resolvedAppleID to my readFromKeychain(appleIDService, accountSlotName)
+			set resolvedPassword to my readFromKeychain(passwordService, accountSlotName)
+			
+			if resolvedAppleID is missing value or resolvedAppleID is "" or resolvedPassword is missing value or resolvedPassword is "" then
+				my logDetail("Credentials for " & accountSlotName & " not fully retrieved from Keychain or empty. Prompting user.")
+				
+				set currentAppleIDValue to ""
+				if resolvedAppleID is not missing value and resolvedAppleID is not "" then
+					set currentAppleIDValue to resolvedAppleID
+				end if
+				
+				display dialog "钥匙串中未找到 " & accountSlotName & " 的完整登录信息，或信息不完整。" & return & return & "请输入 " & accountSlotName & " 的 Apple ID:" default answer currentAppleIDValue with title (accountSlotName & " - Apple ID")
+				set tempUser to text returned of result
+				if tempUser is "" then
+					my logDetail("User did not enter an Apple ID for " & accountSlotName & ". Aborting.")
+					display dialog "未输入Apple ID，脚本已中止。" buttons {"好的"} default button 1 icon stop
+					error "Apple ID cannot be empty." number -128
+				end if
+				
+				display dialog "请输入 " & accountSlotName & " ('" & tempUser & "') 的密码:" default answer "" with hidden answer with title (accountSlotName & " - 密码")
+				set tempPass to text returned of result
+				if tempPass is "" then
+					my logDetail("User did not enter a password for " & accountSlotName & ". Aborting.")
+					display dialog "未输入密码，脚本已中止。" buttons {"好的"} default button 1 icon stop
+					error "Password cannot be empty." number -128
+				end if
+				
+				set resolvedAppleID to tempUser
+				set resolvedPassword to tempPass
+				
+				-- 询问是否保存到钥匙串
+				display dialog "您想将 " & accountSlotName & " (" & resolvedAppleID & ") 的登录信息保存到钥匙串，以便下次自动使用吗？" buttons {"不保存", "保存"} default button "保存" with title "保存到钥匙串？"
+				if button returned of result is "保存" then
+					my saveToKeychain(appleIDService, accountSlotName, resolvedAppleID)
+					my saveToKeychain(passwordService, accountSlotName, resolvedPassword)
+				else
+					my logDetail("User chose not to save credentials for " & accountSlotName & " to Keychain.")
+					-- 如果用户选择不保存，下次仍然会提示输入。如果希望清除已有的（如果存在），则需额外逻辑。
+				end if
+			else
+				my logDetail("Successfully retrieved credentials for " & accountSlotName & " from Keychain: " & resolvedAppleID & " (Password not logged)")
 			end if
 			
-			display dialog "请输入 " & accountNameForDialog & " ('" & targetUser & "') 的密码:" default answer "" with hidden answer with title (accountNameForDialog & " - 密码")
-			set targetPass to text returned of result
-			if targetPass is "" then
-				my logDetail("User did not enter a password for " & accountNameForDialog & ". Aborting.")
-				display dialog "未输入密码，脚本已中止。" buttons {"好的"} default button 1 icon stop
-				error number -128 -- User cancellation
-			end if
-			my logDetail("Target account for " & accountNameForDialog & " set to: " & targetUser & " (Password not logged)")
+			set targetUser to resolvedAppleID
+			set targetPass to resolvedPassword
+			my logDetail("Target account for " & accountSlotName & " set to: " & targetUser & " (Password not logged)")
 		else if choice is "仅退出当前账号" then
 			my logDetail("User chose '仅退出当前账号'.")
 			set targetUser to "" -- Not needed for sign out only
@@ -311,7 +350,7 @@ end joinLogs
 
 -- 辅助处理程序: 脚本结束时的操作 (显示日志) (内容与v2.1一致，此处省略)
 on finalizeScript()
-	my logDetail("========= App Store Account Switcher Script Finished (v2.3.0) =========")
+	my logDetail("========= App Store Account Switcher Script Finished (v2.4.0) =========")
 	
 	log ""
 	log "--- Script Log Start ---"
@@ -328,4 +367,47 @@ on finalizeScript()
 	-- Log a final message to terminal indicating clipboard copy
 	log "--- Full log also copied to clipboard. ---"
 end finalizeScript
+
+-- 新增处理程序: 保存到钥匙串
+on saveToKeychain(serviceName as string, accountNameForKeychainSlot as string, valueToSave as string)
+	my logDetail("Attempting to save to Keychain: Service='" & serviceName & "', AccountSlot='" & accountNameForKeychainSlot & "'")
+	try
+		-- 使用 -U 标志来更新现有项目或创建新项目
+		do shell script "security add-generic-password -s " & quoted form of serviceName & " -a " & quoted form of accountNameForKeychainSlot & " -w " & quoted form of valueToSave & " -U"
+		my logDetail("Successfully saved/updated Keychain item: Service='" & serviceName & "', AccountSlot='" & accountNameForKeychainSlot & "'.")
+		return true
+	on error errMsg number errNum
+		my logDetail("Error saving to Keychain (Service='" & serviceName & "', AccountSlot='" & accountNameForKeychainSlot & "'): " & errMsg & " (Error " & errNum & ")")
+		display dialog "保存登录信息到钥匙串时发生错误：" & return & errMsg & return & return & "服务名: " & serviceName & return & "账号槽: " & accountNameForKeychainSlot buttons {"好的"} default button 1 with icon stop
+		return false
+	end try
+end saveToKeychain
+
+-- 新增处理程序: 从钥匙串读取
+on readFromKeychain(serviceName as string, accountNameForKeychainSlot as string)
+	my logDetail("Attempting to read from Keychain: Service='" & serviceName & "', AccountSlot='" & accountNameForKeychainSlot & "'")
+	try
+		set itemValue to do shell script "security find-generic-password -s " & quoted form of serviceName & " -a " & quoted form of accountNameForKeychainSlot & " -w"
+		if itemValue is not "" then
+			my logDetail("Successfully read Keychain item: Service='" & serviceName & "', AccountSlot='" & accountNameForKeychainSlot & "'. Value retrieved.")
+			return itemValue
+		else
+			my logDetail("Keychain item found (Service='" & serviceName & "', AccountSlot='" & accountNameForKeychainSlot & "') but value is empty.")
+			return "" -- 返回空字符串表示找到但为空，区别于 missing value
+		end if
+	on error errMsg number errNum
+		-- errKCItemNotFound (项未找到) 的错误码是 -25300
+		-- "The specified item could not be found in the keychain" 也是常见的未找到提示
+		if errNum is -25300 or errNum is -128 then -- -128 (userCanceledErr) 如果 security 命令因权限等原因被取消
+			my logDetail("Keychain item not found or access denied/canceled (Service='" & serviceName & "', AccountSlot='" & accountNameForKeychainSlot & "'). Error: " & errMsg)
+		else if "could not be found in the keychain" is in errMsg then
+			my logDetail("Keychain item not found (Service='" & serviceName & "', AccountSlot='" & accountNameForKeychainSlot & "'). Error: " & errMsg)
+		else
+			my logDetail("Error reading from Keychain (Service='" & serviceName & "', AccountSlot='" & accountNameForKeychainSlot & "'): " & errMsg & " (Error " & errNum & ")")
+			-- 可以考虑是否在此处显示错误对话框给用户，但可能过于频繁
+			-- display dialog "从钥匙串读取登录信息时发生错误：" & return & errMsg buttons {"好的"} default button 1 with icon caution
+		end if
+		return missing value -- 表示未找到或发生其他读取错误
+	end try
+end readFromKeychain
 
